@@ -79,6 +79,7 @@ import qualified Data.Char as Char (toLower, isDigit, isAlphaNum)
 import Control.Monad (when)
 
 data CompilerFlavor = GHC | NHC | YHC | Hugs | HBC | Helium | JHC | LHC | UHC
+                    | HaskellSuite
                     | OtherCompiler String
   deriving (Show, Read, Eq, Ord, Typeable, Data)
 
