@@ -136,6 +136,7 @@ import qualified Distribution.Simple.LHC  as LHC
 import qualified Distribution.Simple.NHC  as NHC
 import qualified Distribution.Simple.Hugs as Hugs
 import qualified Distribution.Simple.UHC  as UHC
+import qualified Distribution.Simple.HaskellSuite as HaskellSuite
 
 import Control.Monad
     ( when, unless, foldM, filterM )
@@ -687,6 +688,8 @@ getInstalledPackages verbosity comp packageDBs progconf = do
     LHC -> LHC.getInstalledPackages verbosity packageDBs progconf
     NHC -> NHC.getInstalledPackages verbosity packageDBs progconf
     UHC -> UHC.getInstalledPackages verbosity comp packageDBs progconf
+    HaskellSuite ->
+      HaskellSuite.getInstalledPackages verbosity packageDBs progconf
     flv -> die $ "don't know how to find the installed packages for "
               ++ display flv
 
@@ -855,6 +858,7 @@ configCompiler (Just hcFlavor) hcPath hcPkg conf verbosity = do
     Hugs -> Hugs.configure verbosity hcPath hcPkg conf
     NHC  -> NHC.configure  verbosity hcPath hcPkg conf
     UHC  -> UHC.configure  verbosity hcPath hcPkg conf
+    HaskellSuite -> HaskellSuite.configure verbosity hcPath hcPkg conf
     _    -> die "Unknown compiler"
   return (comp, fromMaybe buildPlatform maybePlatform, programsConfig)
 
@@ -1090,43 +1094,16 @@ checkForeignDeps pkg lbi verbosity = do
         hcDefines comp =
           case compilerFlavor comp of
             GHC  ->
-                let ghcOS = case hostOS of
-                            Linux     -> ["linux"]
-                            Windows   -> ["mingw32"]
-                            OSX       -> ["darwin"]
-                            FreeBSD   -> ["freebsd"]
-                            OpenBSD   -> ["openbsd"]
-                            NetBSD    -> ["netbsd"]
-                            Solaris   -> ["solaris2"]
-                            AIX       -> ["aix"]
-                            HPUX      -> ["hpux"]
-                            IRIX      -> ["irix"]
-                            HaLVM     -> []
-                            IOS       -> ["ios"]
-                            OtherOS _ -> []
-                    ghcArch = case hostArch of
-                              I386        -> ["i386"]
-                              X86_64      -> ["x86_64"]
-                              PPC         -> ["powerpc"]
-                              PPC64       -> ["powerpc64"]
-                              Sparc       -> ["sparc"]
-                              Arm         -> ["arm"]
-                              Mips        -> ["mips"]
-                              SH          -> []
-                              IA64        -> ["ia64"]
-                              S390        -> ["s390"]
-                              Alpha       -> ["alpha"]
-                              Hppa        -> ["hppa"]
-                              Rs6000      -> ["rs6000"]
-                              M68k        -> ["m68k"]
-                              Vax         -> ["vax"]
-                              OtherArch _ -> []
-                in ["-D__GLASGOW_HASKELL__=" ++ versionInt version] ++
-                   map (\os   -> "-D" ++ os   ++ "_HOST_OS=1")   ghcOS ++
-                   map (\arch -> "-D" ++ arch ++ "_HOST_ARCH=1") ghcArch
+              ["-D__GLASGOW_HASKELL__=" ++ versionInt version] ++
+                map (\os   -> "-D" ++ os   ++ "_HOST_OS=1")   osStr ++
+                map (\arch -> "-D" ++ arch ++ "_HOST_ARCH=1") archStr
             JHC  -> ["-D__JHC__=" ++ versionInt version]
             NHC  -> ["-D__NHC__=" ++ versionInt version]
             Hugs -> ["-D__HUGS__"]
+            HaskellSuite ->
+              ["-D__HASKELL_SUITE__"] ++
+                map (\os   -> "-D" ++ os   ++ "_HOST_OS=1")   osStr ++
+                map (\arch -> "-D" ++ arch ++ "_HOST_ARCH=1") archStr
             _    -> []
           where
             Platform hostArch hostOS = hostPlatform lbi
@@ -1146,6 +1123,37 @@ checkForeignDeps pkg lbi verbosity = do
                              _ : _ : _ -> ""
                              _         -> "0"
                 in s1 ++ middle ++ s2
+            osStr = case hostOS of
+              Linux     -> ["linux"]
+              Windows   -> ["mingw32"]
+              OSX       -> ["darwin"]
+              FreeBSD   -> ["freebsd"]
+              OpenBSD   -> ["openbsd"]
+              NetBSD    -> ["netbsd"]
+              Solaris   -> ["solaris2"]
+              AIX       -> ["aix"]
+              HPUX      -> ["hpux"]
+              IRIX      -> ["irix"]
+              HaLVM     -> []
+              IOS       -> ["ios"]
+              OtherOS _ -> []
+            archStr = case hostArch of
+              I386        -> ["i386"]
+              X86_64      -> ["x86_64"]
+              PPC         -> ["powerpc"]
+              PPC64       -> ["powerpc64"]
+              Sparc       -> ["sparc"]
+              Arm         -> ["arm"]
+              Mips        -> ["mips"]
+              SH          -> []
+              IA64        -> ["ia64"]
+              S390        -> ["s390"]
+              Alpha       -> ["alpha"]
+              Hppa        -> ["hppa"]
+              Rs6000      -> ["rs6000"]
+              M68k        -> ["m68k"]
+              Vax         -> ["vax"]
+              OtherArch _ -> []
 
 -- | Output package check warnings and errors. Exit if any errors.
 checkPackageProblems :: Verbosity
