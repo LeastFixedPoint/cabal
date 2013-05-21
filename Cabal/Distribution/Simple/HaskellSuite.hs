@@ -61,6 +61,8 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
 
   extensions <- getExtensions verbosity configuredProg
   languages  <- getLanguages  verbosity configuredProg
+  (compilerName, compilerVersion) <-
+    getCompilerVersion verbosity configuredProg
 
   -- Now rename the program to so that we can find it later. Could't do
   -- that earlier, since 'configureProgram' would attempt to find it under
@@ -97,7 +99,19 @@ hstoolVersion :: Verbosity -> FilePath -> IO (Maybe Version)
 hstoolVersion = findProgramVersion "--hspkg-version" id
 
 numericVersion :: Verbosity -> FilePath -> IO (Maybe Version)
-numericVersion = findProgramVersion "--numeric-version" id
+numericVersion = findProgramVersion "--compiler-version" (last . words)
+
+getCompilerVersion :: Verbosity -> ConfiguredProgram -> IO (String, Version)
+getCompilerVersion verbosity prog = do
+  output <- rawSystemStdout verbosity (programPath prog) ["--compiler-version"]
+  let
+    parts = words output
+    name = concat $ init parts -- there shouldn't be any spaces in the name anyway
+    versionStr = last parts
+  version <-
+    maybe (die "haskell-suite: couldn't determine compiler version") return $
+      simpleParse versionStr
+  return (name, version)
 
 getExtensions :: Verbosity -> ConfiguredProgram -> IO [(Extension, Compiler.Flag)]
 getExtensions verbosity prog = do
