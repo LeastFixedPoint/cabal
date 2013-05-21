@@ -60,6 +60,7 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
   (configuredProg, conf3) <- requireProgram verbosity prog conf2
 
   extensions <- getExtensions verbosity configuredProg
+  languages  <- getLanguages  verbosity configuredProg
 
   -- Now rename the program to so that we can find it later. Could't do
   -- that earlier, since 'configureProgram' would attempt to find it under
@@ -87,7 +88,7 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
 
       comp = Compiler {
         compilerId             = CompilerId HaskellSuite version,
-        compilerLanguages      = [], -- FIXME
+        compilerLanguages      = languages,
         compilerExtensions     = extensions
       }
   return (comp, Nothing, conf5)
@@ -105,6 +106,14 @@ getExtensions verbosity prog = do
     rawSystemStdout verbosity (programPath prog) ["--supported-extensions"]
   return
     [ (ext, "-X" ++ display ext) | Just ext <- map simpleParse extStrs ]
+
+getLanguages :: Verbosity -> ConfiguredProgram -> IO [(Language, Compiler.Flag)]
+getLanguages verbosity prog = do
+  langStrs <-
+    lines <$>
+    rawSystemStdout verbosity (programPath prog) ["--supported-languages"]
+  return
+    [ (ext, "-G" ++ display ext) | Just ext <- map simpleParse langStrs ]
 
 -- Other compilers do some kind of a packagedb stack check here. Not sure
 -- if we need something like that as well.
@@ -150,6 +159,7 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
       bi = libBuildInfo lib
       srcDirs = hsSourceDirs bi ++ [odir]
       dbStack = withPackageDB lbi
+      language = fromMaybe Haskell98 (defaultLanguage bi)
 
   (hstool, _) <- requireProgram verbosity hstoolProg (withPrograms lbi)
 
@@ -161,8 +171,11 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
       [ packageDbOpt pkgDb | pkgDb <- dbStack ] ++
       concat [ ["--package-id", display ipkgid ]
              | (ipkgid, _) <- componentPackageDeps clbi ] ++
+      ["-G", display language] ++
       concat [ ["-X", display ex] | ex <- usedExtensions bi ] ++
       [ display modu | modu <- libModules lib ]
+
+
 
 installLib
   :: Verbosity
