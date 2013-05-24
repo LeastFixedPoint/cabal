@@ -176,7 +176,7 @@ install pkg_descr lbi flags = do
      NHC  -> do withLibLBI pkg_descr lbi $ NHC.installLib verbosity libPref buildPref (packageId pkg_descr)
                 withExe pkg_descr $ NHC.installExe verbosity binPref buildPref (progPrefixPref, progSuffixPref)
      UHC  -> do withLib pkg_descr $ UHC.installLib verbosity lbi libPref dynlibPref buildPref pkg_descr
-     HaskellSuite ->
+     HaskellSuite {} ->
        withLib pkg_descr $
          HaskellSuite.installLib verbosity lbi libPref dynlibPref buildPref pkg_descr
      _    -> die $ "installing with "

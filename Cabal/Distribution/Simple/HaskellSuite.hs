@@ -61,7 +61,7 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
 
   extensions <- getExtensions verbosity configuredProg
   languages  <- getLanguages  verbosity configuredProg
-  (compilerName, compilerVersion) <-
+  (compName, compVersion) <-
     getCompilerVersion verbosity configuredProg
 
   -- Now rename the program to so that we can find it later. Could't do
@@ -86,10 +86,8 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
             }
           conf4
 
-      Just version = programVersion configuredProg
-
       comp = Compiler {
-        compilerId             = CompilerId HaskellSuite version,
+        compilerId             = CompilerId (HaskellSuite compName) compVersion,
         compilerLanguages      = languages,
         compilerExtensions     = extensions
       }

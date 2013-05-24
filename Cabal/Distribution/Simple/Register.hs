@@ -247,7 +247,7 @@ registerPackage verbosity installedPkgInfo pkg lbi inplace packageDbs = do
     UHC  -> UHC.registerPackage  verbosity installedPkgInfo pkg lbi inplace packageDbs
     JHC  -> notice verbosity "Registering for jhc (nothing to do)"
     NHC  -> notice verbosity "Registering for nhc98 (nothing to do)"
-    HaskellSuite ->
+    HaskellSuite {} ->
       HaskellSuite.registerPackage verbosity installedPkgInfo pkg lbi inplace packageDbs
     _    -> die "Registering is not implemented for this compiler"
 

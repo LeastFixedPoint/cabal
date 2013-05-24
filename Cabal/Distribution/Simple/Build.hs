@@ -330,7 +330,7 @@ buildLib verbosity pkg_descr lbi lib clbi =
     Hugs -> Hugs.buildLib verbosity pkg_descr lbi lib clbi
     NHC  -> NHC.buildLib  verbosity pkg_descr lbi lib clbi
     UHC  -> UHC.buildLib  verbosity pkg_descr lbi lib clbi
-    HaskellSuite -> HaskellSuite.buildLib verbosity pkg_descr lbi lib clbi
+    HaskellSuite {} -> HaskellSuite.buildLib verbosity pkg_descr lbi lib clbi
     _    -> die "Building is not supported with this compiler."
 
 buildExe :: Verbosity -> PackageDescription -> LocalBuildInfo

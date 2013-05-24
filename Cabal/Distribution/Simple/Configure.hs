@@ -688,7 +688,7 @@ getInstalledPackages verbosity comp packageDBs progconf = do
     LHC -> LHC.getInstalledPackages verbosity packageDBs progconf
     NHC -> NHC.getInstalledPackages verbosity packageDBs progconf
     UHC -> UHC.getInstalledPackages verbosity comp packageDBs progconf
-    HaskellSuite ->
+    HaskellSuite {} ->
       HaskellSuite.getInstalledPackages verbosity packageDBs progconf
     flv -> die $ "don't know how to find the installed packages for "
               ++ display flv
@@ -871,7 +871,7 @@ configCompiler (Just hcFlavor) hcPath hcPkg conf verbosity = do
     Hugs -> Hugs.configure verbosity hcPath hcPkg conf
     NHC  -> NHC.configure  verbosity hcPath hcPkg conf
     UHC  -> UHC.configure  verbosity hcPath hcPkg conf
-    HaskellSuite -> HaskellSuite.configure verbosity hcPath hcPkg conf
+    HaskellSuite {} -> HaskellSuite.configure verbosity hcPath hcPkg conf
     _    -> die "Unknown compiler"
   return (comp, fromMaybe buildPlatform maybePlatform, programsConfig)
 
@@ -1113,7 +1113,7 @@ checkForeignDeps pkg lbi verbosity = do
             JHC  -> ["-D__JHC__=" ++ versionInt version]
             NHC  -> ["-D__NHC__=" ++ versionInt version]
             Hugs -> ["-D__HUGS__"]
-            HaskellSuite ->
+            HaskellSuite {} ->
               ["-D__HASKELL_SUITE__"] ++
                 map (\os   -> "-D" ++ os   ++ "_HOST_OS=1")   osStr ++
                 map (\arch -> "-D" ++ arch ++ "_HOST_ARCH=1") archStr

@@ -369,7 +369,10 @@ configureOptions showOrParseArgs =
                     , (Flag LHC, ([] , ["lhc"]), "compile with LHC")
                     , (Flag Hugs,([] , ["hugs"]), "compile with Hugs")
                     , (Flag UHC, ([] , ["uhc"]), "compile with UHC")
-                    , (Flag HaskellSuite, ([] , ["haskell-suite"]),
+
+                    -- "haskell-suite" compiler id string will be replaced
+                    -- by a more specific one during the configure stage
+                    , (Flag (HaskellSuite "haskell-suite"), ([] , ["haskell-suite"]),
                         "compile with a haskell-suite compiler")])
 
       ,option "w" ["with-compiler"]
