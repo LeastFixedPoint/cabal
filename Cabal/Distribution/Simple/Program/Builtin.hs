@@ -181,7 +181,7 @@ ffihugsProgram = simpleProgram "ffihugs"
 haskellSuiteProgram :: Program
 haskellSuiteProgram = (simpleProgram "haskell-suite") {
     -- don't even try to find this program
-    programFindLocation _verbosity = return Nothing
+    programFindLocation = \_verbosity -> return Nothing
   }
 
 
