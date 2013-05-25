@@ -180,8 +180,10 @@ ffihugsProgram = simpleProgram "ffihugs"
 -- actual compiler.
 haskellSuiteProgram :: Program
 haskellSuiteProgram = (simpleProgram "haskell-suite") {
-    -- don't even try to find this program
-    programFindLocation = \_verbosity -> return Nothing
+    -- pretend that the program exists, otherwise it won't be in the
+    -- "configured" state
+    programFindLocation =
+      \_verbosity -> return $ Just "haskell-suite-dummy-location"
   }
 
 
