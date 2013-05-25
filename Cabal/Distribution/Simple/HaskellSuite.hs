@@ -20,6 +20,7 @@ import Distribution.Simple.LocalBuildInfo
 import Distribution.System (Platform)
 import Distribution.Compat.Exception
 import Language.Haskell.Extension
+import Distribution.Simple.Program.Builtin (haskellSuiteProgram)
 
 hstoolProg :: Program
 hstoolProg = simpleProgram "haskell-suite-tool"
@@ -176,7 +177,7 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
   (hstool, _) <- requireProgram verbosity hstoolProg (withPrograms lbi)
 
   -- a dummy tool for which the user can specify the options
-  (haskellSuite, _) <- requireProgram verbosity hstoolProg (withPrograms lbi)
+  (haskellSuite, _) <- requireProgram verbosity haskellSuiteProgram (withPrograms lbi)
   let userOptions = programOverrideArgs haskellSuite
 
   runProgramInvocation verbosity $
