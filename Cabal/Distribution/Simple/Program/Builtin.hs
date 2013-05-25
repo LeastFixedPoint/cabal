@@ -25,6 +25,7 @@ module Distribution.Simple.Program.Builtin (
     jhcProgram,
     hugsProgram,
     ffihugsProgram,
+    haskellSuiteProgram,
     uhcProgram,
     gccProgram,
     ranlibProgram,
@@ -64,6 +65,7 @@ builtinPrograms =
     , ghcPkgProgram
     , hugsProgram
     , ffihugsProgram
+    , haskellSuiteProgram
     , nhcProgram
     , hmakeProgram
     , jhcProgram
@@ -172,6 +174,16 @@ hugsProgram = simpleProgram "hugs"
 
 ffihugsProgram :: Program
 ffihugsProgram = simpleProgram "ffihugs"
+
+-- Not a real program. This is a hack to be able to accept options for
+-- a haskell-suite compiler. These options will then be passed to an
+-- actual compiler.
+haskellSuiteProgram :: Program
+haskellSuiteProgram = (simpleProgram "haskell-suite") {
+    -- don't even try to find this program
+    programFindLocation _verbosity = return Nothing
+  }
+
 
 happyProgram :: Program
 happyProgram = (simpleProgram "happy") {
