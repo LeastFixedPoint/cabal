@@ -175,6 +175,10 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
 
   (hstool, _) <- requireProgram verbosity hstoolProg (withPrograms lbi)
 
+  -- a dummy tool for which the user can specify the options
+  (haskellSuite, _) <- requireProgram verbosity hstoolProg (withPrograms lbi)
+  let userOptions = programOverrideArgs haskellSuite
+
   runProgramInvocation verbosity $
     programInvocation hstool $
       [ "compile", "--build-dir", odir ] ++
@@ -185,6 +189,7 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
              | (ipkgid, _) <- componentPackageDeps clbi ] ++
       ["-G", display language] ++
       concat [ ["-X", display ex] | ex <- usedExtensions bi ] ++
+      userOptions ++
       [ display modu | modu <- libModules lib ]
 
 
