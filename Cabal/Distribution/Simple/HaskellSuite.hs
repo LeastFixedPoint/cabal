@@ -37,50 +37,31 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
   when (isJust hcPkgPath) $
     warn verbosity "--with-hc-pkg option is ignored for haskell-suite"
 
-  -- Unlike many other compilers, here it makes sense to allow hcPath be
-  -- just a name of executable (since it's not known a priori).
-  let (hcPathDir, hcPathFile) = splitFileName hcPath
-      pathSpecified = not $ null hcPathDir
+  let
+    haskellSuiteProgram' =
+      haskellSuiteProgram
+        { programFindLocation = \v -> findProgramLocation v hcPath }
 
-      prog =
-        (simpleProgram hcPathFile)
-          { programFindVersion = numericVersion }
+  -- NB: cannot call requireProgram right away — it'd think that
+  -- the program is already configured and won't reconfigure it again.
+  -- Instead, call configureProgram directly first.
+  conf2 <- configureProgram verbosity haskellSuiteProgram' conf0
+  (confdCompiler, conf3) <- requireProgram verbosity haskellSuiteProgram' conf2
 
-      conf1 = addKnownProgram prog conf0
-
-      conf2 =
-        if pathSpecified
-          then userSpecifyPath hcPathFile hcPath conf1
-          else conf1
-
-  (configuredProg, conf3) <- requireProgram verbosity prog conf2
-
-  extensions <- getExtensions verbosity configuredProg
-  languages  <- getLanguages  verbosity configuredProg
+  extensions <- getExtensions verbosity confdCompiler
+  languages  <- getLanguages  verbosity confdCompiler
   (compName, compVersion) <-
-    getCompilerVersion verbosity configuredProg
+    getCompilerVersion verbosity confdCompiler
 
-  -- Now rename the program to so that we can find it later. Could't do
-  -- that earlier, since 'configureProgram' would attempt to find it under
-  -- this meaningless name.
-  --
-  -- Actually, the current Distribution.Simple.Program.Db interface only
-  -- allows us to add a new name for an existing program. We can't delete
-  -- the original name. Well, that should be good enough.
-  let conf4 =
+  -- Update our pkg tool
+  (confdPkg, _) <- requireProgram verbosity haskellSuitePkgProgram conf3
+  let conf5 =
         updateProgram
-          configuredProg { programId = programName haskellSuiteProgram }
-          conf3
-
-  -- Register our package tool. It's the same executable, qualified with
-  -- the "pkg" subcommand.
-      conf5 =
-        updateProgram
-          configuredProg
-            { programId = programName haskellSuitePkgProgram
+          confdPkg
+            { programLocation = programLocation confdCompiler
             , programDefaultArgs = ["pkg"]
             }
-          conf4
+          conf3
 
       comp = Compiler {
         compilerId             = CompilerId (HaskellSuite compName) compVersion,
