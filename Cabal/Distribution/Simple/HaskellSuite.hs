@@ -20,13 +20,8 @@ import Distribution.Simple.LocalBuildInfo
 import Distribution.System (Platform)
 import Distribution.Compat.Exception
 import Language.Haskell.Extension
-import Distribution.Simple.Program.Builtin (haskellSuiteProgram)
-
-hstoolProg :: Program
-hstoolProg = simpleProgram "haskell-suite-tool"
-
-hspkgProg :: Program
-hspkgProg = simpleProgram "haskell-suite-pkg"
+import Distribution.Simple.Program.Builtin
+  (haskellSuiteProgram, haskellSuitePkgProgram)
 
 configure
   :: Verbosity -> Maybe FilePath -> Maybe FilePath
@@ -74,7 +69,7 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
   -- the original name. Well, that should be good enough.
   let conf4 =
         updateProgram
-          configuredProg { programId = programName hstoolProg }
+          configuredProg { programId = programName haskellSuiteProgram }
           conf3
 
   -- Register our package tool. It's the same executable, qualified with
@@ -82,7 +77,7 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
       conf5 =
         updateProgram
           configuredProg
-            { programId = programName hspkgProg
+            { programId = programName haskellSuitePkgProgram
             , programDefaultArgs = ["pkg"]
             }
           conf4
@@ -135,7 +130,7 @@ getInstalledPackages :: Verbosity -> PackageDBStack -> ProgramConfiguration
 getInstalledPackages verbosity packagedbs conf =
   liftM (PackageIndex.fromList . concat) $ forM packagedbs $ \packagedb ->
     do str <-
-        rawSystemProgramStdoutConf verbosity hspkgProg conf
+        rawSystemProgramStdoutConf verbosity haskellSuitePkgProgram conf
                 ["dump", packageDbOpt packagedb]
          `catchExit` \_ -> die $ "pkg dump failed"
        case parsePackages str of
@@ -174,7 +169,7 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
       dbStack = withPackageDB lbi
       language = fromMaybe Haskell98 (defaultLanguage bi)
 
-  (hstool, _) <- requireProgram verbosity hstoolProg (withPrograms lbi)
+  (hstool, _) <- requireProgram verbosity haskellSuiteProgram (withPrograms lbi)
 
   -- a dummy tool for which the user can specify the options
   (haskellSuite, _) <- requireProgram verbosity haskellSuiteProgram (withPrograms lbi)
@@ -205,7 +200,7 @@ installLib
   -> Library
   -> IO ()
 installLib verbosity lbi targetDir dynlibTargetDir builtDir pkg lib = do
-  (hspkg, _) <- requireProgram verbosity hspkgProg (withPrograms lbi)
+  (hspkg, _) <- requireProgram verbosity haskellSuitePkgProgram (withPrograms lbi)
   runProgramInvocation verbosity $
     programInvocation hspkg $
       [ "install-library"
@@ -224,7 +219,7 @@ registerPackage
   -> PackageDBStack
   -> IO ()
 registerPackage verbosity installedPkgInfo _pkg lbi _inplace packageDbs = do
-  (hspkg, _) <- requireProgram verbosity hspkgProg (withPrograms lbi)
+  (hspkg, _) <- requireProgram verbosity haskellSuitePkgProgram (withPrograms lbi)
 
   runProgramInvocation verbosity $
     (programInvocation hspkg
