@@ -2,7 +2,6 @@ module Distribution.Simple.HaskellSuite where
 
 import Control.Monad
 import Control.Applicative
-import System.FilePath
 import Data.Maybe
 import Data.Version
 
@@ -37,38 +36,47 @@ configure verbosity mbHcPath hcPkgPath conf0 = do
   when (isJust hcPkgPath) $
     warn verbosity "--with-hc-pkg option is ignored for haskell-suite"
 
-  let
-    haskellSuiteProgram' =
-      haskellSuiteProgram
-        { programFindLocation = \v -> findProgramLocation v hcPath }
+  (comp, confdCompiler, conf1) <- configureCompiler hcPath conf0
 
-  -- NB: cannot call requireProgram right away — it'd think that
-  -- the program is already configured and won't reconfigure it again.
-  -- Instead, call configureProgram directly first.
-  conf2 <- configureProgram verbosity haskellSuiteProgram' conf0
-  (confdCompiler, conf3) <- requireProgram verbosity haskellSuiteProgram' conf2
-
-  extensions <- getExtensions verbosity confdCompiler
-  languages  <- getLanguages  verbosity confdCompiler
-  (compName, compVersion) <-
-    getCompilerVersion verbosity confdCompiler
-
-  -- Update our pkg tool
-  (confdPkg, _) <- requireProgram verbosity haskellSuitePkgProgram conf3
-  let conf5 =
+  -- Update our pkg tool. It uses the same executable as the compiler, but
+  -- all command start with "pkg"
+  (confdPkg, _) <- requireProgram verbosity haskellSuitePkgProgram conf1
+  let conf2 =
         updateProgram
           confdPkg
             { programLocation = programLocation confdCompiler
             , programDefaultArgs = ["pkg"]
             }
-          conf3
+          conf1
 
-      comp = Compiler {
-        compilerId             = CompilerId (HaskellSuite compName) compVersion,
-        compilerLanguages      = languages,
-        compilerExtensions     = extensions
-      }
-  return (comp, Nothing, conf5)
+  return (comp, Nothing, conf2)
+
+  where
+    configureCompiler hcPath conf0 = do
+      let
+        haskellSuiteProgram' =
+          haskellSuiteProgram
+            { programFindLocation = \v -> findProgramLocation v hcPath }
+
+      -- NB: cannot call requireProgram right away — it'd think that
+      -- the program is already configured and won't reconfigure it again.
+      -- Instead, call configureProgram directly first.
+      conf1 <- configureProgram verbosity haskellSuiteProgram' conf0
+      (confdCompiler, conf2) <- requireProgram verbosity haskellSuiteProgram' conf1
+
+      extensions <- getExtensions verbosity confdCompiler
+      languages  <- getLanguages  verbosity confdCompiler
+      (compName, compVersion) <-
+        getCompilerVersion verbosity confdCompiler
+
+      let
+        comp = Compiler {
+          compilerId             = CompilerId (HaskellSuite compName) compVersion,
+          compilerLanguages      = languages,
+          compilerExtensions     = extensions
+        }
+
+      return (comp, confdCompiler, conf2)
 
 hstoolVersion :: Verbosity -> FilePath -> IO (Maybe Version)
 hstoolVersion = findProgramVersion "--hspkg-version" id
