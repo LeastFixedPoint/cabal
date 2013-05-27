@@ -207,6 +207,11 @@ registerPackage verbosity installedPkgInfo _pkg lbi _inplace packageDbs = do
       ["update", packageDbOpt $ last packageDbs])
       { progInvokeInput = Just $ showInstalledPackageInfo installedPkgInfo }
 
+initPackageDB :: Verbosity -> ProgramConfiguration -> FilePath -> IO ()
+initPackageDB verbosity conf dbPath =
+  runDbProgram verbosity haskellSuitePkgProgram conf
+    ["init", dbPath]
+
 packageDbOpt :: PackageDB -> String
 packageDbOpt GlobalPackageDB        = "--global"
 packageDbOpt UserPackageDB          = "--user"

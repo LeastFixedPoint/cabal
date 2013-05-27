@@ -215,6 +215,7 @@ initPackageDB :: Verbosity -> Compiler -> ProgramConfiguration -> FilePath
 initPackageDB verbosity comp conf dbPath =
   case (compilerFlavor comp) of
     GHC -> GHC.initPackageDB verbosity conf dbPath
+    HaskellSuite {} -> HaskellSuite.initPackageDB verbosity conf dbPath
     _   -> die "Distribution.Simple.Register.initPackageDB: \
                \not implemented for this compiler"
 
