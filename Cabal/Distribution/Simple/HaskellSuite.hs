@@ -119,7 +119,7 @@ getInstalledPackages :: Verbosity -> PackageDBStack -> ProgramConfiguration
 getInstalledPackages verbosity packagedbs conf =
   liftM (PackageIndex.fromList . concat) $ forM packagedbs $ \packagedb ->
     do str <-
-        rawSystemProgramStdoutConf verbosity haskellSuitePkgProgram conf
+        getDbProgramOutput verbosity haskellSuitePkgProgram conf
                 ["dump", packageDbOpt packagedb]
          `catchExit` \_ -> die $ "pkg dump failed"
        case parsePackages str of
@@ -157,20 +157,18 @@ buildLib verbosity _pkg_descr lbi lib clbi = do
       srcDirs = hsSourceDirs bi ++ [odir]
       dbStack = withPackageDB lbi
       language = fromMaybe Haskell98 (defaultLanguage bi)
+      conf = withPrograms lbi
 
-  (hstool, _) <- requireProgram verbosity haskellSuiteProgram (withPrograms lbi)
-
-  runProgramInvocation verbosity $
-    programInvocation hstool $
-      [ "compile", "--build-dir", odir ] ++
-      concat [ ["-i", d] | d <- srcDirs ] ++
-      concat [ ["-I", d] | d <- [autogenModulesDir lbi, odir] ++ includeDirs bi ] ++
-      [ packageDbOpt pkgDb | pkgDb <- dbStack ] ++
-      concat [ ["--package-id", display ipkgid ]
-             | (ipkgid, _) <- componentPackageDeps clbi ] ++
-      ["-G", display language] ++
-      concat [ ["-X", display ex] | ex <- usedExtensions bi ] ++
-      [ display modu | modu <- libModules lib ]
+  runDbProgram verbosity haskellSuiteProgram conf $
+    [ "compile", "--build-dir", odir ] ++
+    concat [ ["-i", d] | d <- srcDirs ] ++
+    concat [ ["-I", d] | d <- [autogenModulesDir lbi, odir] ++ includeDirs bi ] ++
+    [ packageDbOpt pkgDb | pkgDb <- dbStack ] ++
+    concat [ ["--package-id", display ipkgid ]
+           | (ipkgid, _) <- componentPackageDeps clbi ] ++
+    ["-G", display language] ++
+    concat [ ["-X", display ex] | ex <- usedExtensions bi ] ++
+    [ display modu | modu <- libModules lib ]
 
 
 
@@ -184,15 +182,14 @@ installLib
   -> Library
   -> IO ()
 installLib verbosity lbi targetDir dynlibTargetDir builtDir pkg lib = do
-  (hspkg, _) <- requireProgram verbosity haskellSuitePkgProgram (withPrograms lbi)
-  runProgramInvocation verbosity $
-    programInvocation hspkg $
-      [ "install-library"
-      , "--build-dir", builtDir
-      , "--target-dir", targetDir
-      , "--dynlib-target-dir", dynlibTargetDir
-      , "--package-id", display $ packageId pkg
-      ] ++ map display (libModules lib)
+  let conf = withPrograms lbi
+  runDbProgram verbosity haskellSuitePkgProgram conf $
+    [ "install-library"
+    , "--build-dir", builtDir
+    , "--target-dir", targetDir
+    , "--dynlib-target-dir", dynlibTargetDir
+    , "--package-id", display $ packageId pkg
+    ] ++ map display (libModules lib)
 
 registerPackage
   :: Verbosity
