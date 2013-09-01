@@ -114,6 +114,7 @@ import Distribution.Verbosity as Verbosity
        ( Verbosity, normal )
 import qualified Paths_cabal_install (version)
 
+import System.Directory         (canonicalizePath)
 import System.Environment       (getArgs, getProgName)
 import System.Exit              (exitFailure)
 import System.FilePath          (splitExtension, takeExtension)
@@ -522,6 +523,14 @@ reconfigure verbosity distPref     addConfigFlags extraArgs globalFlags
         ++ reconfiguringMostRecent
         ++ configureManually
 
+canonicalizePathFlag :: Flag String -> IO (Flag String)
+canonicalizePathFlag = maybe (return NoFlag) (fmap Flag . canonicalizePath) . flagToMaybe
+
+canonicalizeCompilerPath :: ConfigFlags -> IO ConfigFlags
+canonicalizeCompilerPath flags = do
+  canonicalizedPathFlag <- canonicalizePathFlag (configHcPath flags) 
+  return $ flags { configHcPath = canonicalizedPathFlag }
+
 installAction :: (ConfigFlags, ConfigExFlags, InstallFlags, HaddockFlags)
               -> [String] -> GlobalFlags -> IO ()
 installAction (configFlags, _, installFlags, _) _ _globalFlags
@@ -550,12 +559,14 @@ installAction (configFlags, configExFlags, installFlags, haddockFlags)
   let sandboxDistPref = case useSandbox of
         NoSandbox             -> NoFlag
         UseSandbox sandboxDir -> Flag $ sandboxBuildDir sandboxDir
-      configFlags'    = savedConfigureFlags   config `mappend` configFlags
       configExFlags'  = defaultConfigExFlags         `mappend`
                         savedConfigureExFlags config `mappend` configExFlags
       installFlags'   = defaultInstallFlags          `mappend`
                         savedInstallFlags     config `mappend` installFlags
       globalFlags'    = savedGlobalFlags      config `mappend` globalFlags
+      
+  configFlags' <- canonicalizeCompilerPath $ savedConfigureFlags config `mappend` configFlags
+
   (comp, platform, conf) <- configCompilerAux' configFlags'
 
   -- If we're working inside a sandbox and the user has set the -w option, we
